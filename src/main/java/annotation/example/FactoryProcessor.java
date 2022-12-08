@@ -1,10 +1,14 @@
 package annotation.example;
 
 import com.google.auto.service.AutoService;
+import com.squareup.javapoet.JavaFile;
+import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeSpec;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
@@ -64,27 +68,24 @@ public class FactoryProcessor extends AbstractProcessor {
 
     private void processElement(Element element) {
         try {
-            JavaFileObject f = processingEnv.getFiler().
-                    createSourceFile("in.test.ExtraClass");
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                    "Creating " + f.toUri());
-            Writer w = f.openWriter();
-            try {
-                PrintWriter pw = new PrintWriter(w);
-                pw.println("package in.test;");
-                pw.println("public class ExtraClass {");
-                pw.println("    public void print() {");
-                pw.println("        System.out.println(\"Hello boss!\");");
-                pw.println("    }");
-                pw.println("}");
-                pw.flush();
-            } finally {
-                w.close();
-            }
-        } catch (IOException x) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    x.toString());
+
+            MethodSpec main = MethodSpec.methodBuilder("main")
+                    .addStatement("int total = 0")
+                    .beginControlFlow("for (int i = 0; i < 10; i++)")
+                    .addStatement("total += i")
+                    .endControlFlow()
+                    .build();
+            TypeSpec helloWorld = TypeSpec.classBuilder("HelloWorld")
+                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                    .addMethod(main)
+                    .build();
+            JavaFile.builder(String.valueOf(elementUtils.getPackageOf(element)), helloWorld)
+                    .build()
+                    .writeTo(filer);
+        }catch (IOException e){
+            messager.printMessage(Diagnostic.Kind.ERROR,"ERROR WHILE WRITING", element);
         }
+
     }
 
     @Override
